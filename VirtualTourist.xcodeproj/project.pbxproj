@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E720F38125AF1C36005023B7 /* TravelLocationsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E720F38025AF1C36005023B7 /* TravelLocationsViewController.swift */; };
+		E720F38425AF1C7E005023B7 /* PhotoAlbumViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E720F38325AF1C7E005023B7 /* PhotoAlbumViewController.swift */; };
 		E794AEAF25AE0AF000411C7E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E794AEAE25AE0AF000411C7E /* AppDelegate.swift */; };
 		E794AEB125AE0AF000411C7E /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E794AEB025AE0AF000411C7E /* SceneDelegate.swift */; };
 		E794AEB325AE0AF000411C7E /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E794AEB225AE0AF000411C7E /* ViewController.swift */; };
@@ -17,6 +19,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		E720F38025AF1C36005023B7 /* TravelLocationsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelLocationsViewController.swift; sourceTree = "<group>"; };
+		E720F38325AF1C7E005023B7 /* PhotoAlbumViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAlbumViewController.swift; sourceTree = "<group>"; };
 		E794AEAB25AE0AF000411C7E /* VirtualTourist.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VirtualTourist.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E794AEAE25AE0AF000411C7E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E794AEB025AE0AF000411C7E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -39,6 +43,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		E720F38625AF1CA1005023B7 /* ViewControllers */ = {
+			isa = PBXGroup;
+			children = (
+				E720F38025AF1C36005023B7 /* TravelLocationsViewController.swift */,
+				E720F38325AF1C7E005023B7 /* PhotoAlbumViewController.swift */,
+			);
+			path = ViewControllers;
+			sourceTree = "<group>";
+		};
 		E794AEA225AE0AF000411C7E = {
 			isa = PBXGroup;
 			children = (
@@ -66,6 +79,7 @@
 				E794AEBC25AE0AF400411C7E /* LaunchScreen.storyboard */,
 				E794AEBF25AE0AF400411C7E /* Info.plist */,
 				E794AEC625AE0B2100411C7E /* Model */,
+				E720F38625AF1CA1005023B7 /* ViewControllers */,
 			);
 			path = VirtualTourist;
 			sourceTree = "<group>";
@@ -151,7 +165,9 @@
 				E794AEB925AE0AF000411C7E /* VirtualTourist.xcdatamodeld in Sources */,
 				E794AEB325AE0AF000411C7E /* ViewController.swift in Sources */,
 				E794AEAF25AE0AF000411C7E /* AppDelegate.swift in Sources */,
+				E720F38125AF1C36005023B7 /* TravelLocationsViewController.swift in Sources */,
 				E794AEB125AE0AF000411C7E /* SceneDelegate.swift in Sources */,
+				E720F38425AF1C7E005023B7 /* PhotoAlbumViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
