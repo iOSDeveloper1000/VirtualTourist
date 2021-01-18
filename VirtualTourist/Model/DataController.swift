@@ -13,7 +13,7 @@ class DataController {
     
     let persistentContainer: NSPersistentContainer!
     
-    var mainContext: NSManagedObjectContext {
+    var viewContext: NSManagedObjectContext {
         return persistentContainer.viewContext
     }
     
@@ -28,6 +28,17 @@ class DataController {
             }
             
             completion?()
+        }
+    }
+    
+    func saveInMainContext() {
+        if viewContext.hasChanges {
+            do {
+                try viewContext.save()
+            } catch {
+                print("Error while saving")
+                print(error.localizedDescription)
+            }
         }
     }
     
