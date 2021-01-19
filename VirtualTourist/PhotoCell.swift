@@ -14,7 +14,7 @@ class PhotoCell: UICollectionViewCell {
     
     @IBOutlet weak var imageView: UIImageView!
     
-    override func updateConfiguration(using state: UICellConfigurationState) {
+    /*override func updateConfiguration(using state: UICellConfigurationState) {
         imageView.image = nil // UIImage(data: photo.image)
-    }
+    }*/
 }

@@ -15,13 +15,13 @@ class NetworkClient {
         static let staticPhotoUrl = "https://live.staticflickr.com"
         static let apiKey = ""
         static let apiMethod = "flickr.photos.search"
-        static let photosPerPage = 13
+        static let photosPerPage = 18
         static let pageNumber = 3
         static let searchRangeInKM = 7
     }
     
     
-    class func downloadListOfPhotoUrls(latitude: Double, longitude: Double, completion: @escaping ([String]?, HttpStatusResponse?, Error?) -> Void) {
+    class func downloadListOfPhotoUrls(latitude: Double, longitude: Double, completion: @escaping ([String]?, HttpStatusResponse?, Error?) -> Void) -> URLSessionDataTask {
 
         let flickrUrl = URL(string: "\(Constants.endpointSearch)?api_key=\(Constants.apiKey)&method=\(Constants.apiMethod)&format=json&per_page=\(Constants.photosPerPage)&page=\(Constants.pageNumber)&lat=\(latitude)&lon=\(longitude)&radius=\(Constants.searchRangeInKM)")
         
@@ -42,7 +42,7 @@ class NetworkClient {
                 // Synthesize the static photo urls
                 var photoUrls = [String]()
                 for img in responseBody.photos.photo {
-                    let url = "\(Constants.staticPhotoUrl)/\(img.server)/\(img.id)_\(img.secret)_n.jpg"
+                    let url = "\(Constants.staticPhotoUrl)/\(img.server)/\(img.id)_\(img.secret)_w.jpg"
                     photoUrls.append(url)
                 }
                 
@@ -52,7 +52,7 @@ class NetworkClient {
                 
             } catch {
                 do { // catch HTTP Error response
-                    let responseBody = try decoder.decode(HttpStatusResponse.self, from: data)
+                    let responseBody = try decoder.decode(HttpStatusResponse.self, from: jsonData)
                     DispatchQueue.main.async {
                         completion(nil, responseBody, error)
                     }
@@ -64,6 +64,8 @@ class NetworkClient {
             }
         })
         task.resume()
+        
+        return task
     }
     
     /*class func downloadImageData(url: URL, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {

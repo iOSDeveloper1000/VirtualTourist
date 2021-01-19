@@ -10,12 +10,8 @@ import Foundation
 
 struct HttpStatusResponse: Codable {
     
+    let stat: String
     let code: Int
     let message: String
-    
-    enum CodingKeys: String, CodingKey {
-        case code = "status"
-        case message = "error"
-    }
 
 }

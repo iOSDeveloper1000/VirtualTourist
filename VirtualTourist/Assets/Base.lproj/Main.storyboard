@@ -60,7 +60,7 @@
                                     <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="jvC-mY-NIa">
                                         <rect key="frame" x="0.0" y="195" width="414" height="524"/>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                                        <collectionViewFlowLayout key="collectionViewLayout" automaticEstimatedItemSize="YES" minimumLineSpacing="10" minimumInteritemSpacing="10" id="HYt-rA-voX">
+                                        <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="10" minimumInteritemSpacing="10" id="HYt-rA-voX">
                                             <size key="itemSize" width="128" height="128"/>
                                             <size key="headerReferenceSize" width="0.0" height="0.0"/>
                                             <size key="footerReferenceSize" width="0.0" height="0.0"/>
@@ -74,16 +74,11 @@
                                                     <rect key="frame" x="0.0" y="0.0" width="128" height="128"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                     <subviews>
-                                                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="rXb-W2-iQj">
+                                                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="rXb-W2-iQj">
                                                             <rect key="frame" x="0.0" y="0.0" width="128" height="128"/>
+                                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                         </imageView>
                                                     </subviews>
-                                                    <constraints>
-                                                        <constraint firstItem="rXb-W2-iQj" firstAttribute="top" secondItem="960-El-4L8" secondAttribute="top" id="11A-Km-b1F"/>
-                                                        <constraint firstAttribute="trailing" secondItem="rXb-W2-iQj" secondAttribute="trailing" id="16h-f5-Cev"/>
-                                                        <constraint firstAttribute="bottom" secondItem="rXb-W2-iQj" secondAttribute="bottom" id="daX-ia-xiT"/>
-                                                        <constraint firstItem="rXb-W2-iQj" firstAttribute="leading" secondItem="960-El-4L8" secondAttribute="leading" id="lbp-C8-cDo"/>
-                                                    </constraints>
                                                 </collectionViewCellContentView>
                                                 <connections>
                                                     <outlet property="imageView" destination="rXb-W2-iQj" id="e6l-k3-fI6"/>
@@ -127,6 +122,7 @@
                     <navigationItem key="navigationItem" id="z4w-yd-Lej"/>
                     <connections>
                         <outlet property="collectionView" destination="jvC-mY-NIa" id="BkF-8F-DVX"/>
+                        <outlet property="flowLayout" destination="HYt-rA-voX" id="Hf2-w4-Eed"/>
                         <outlet property="localMap" destination="nvf-TQ-Evl" id="QeH-zx-VWd"/>
                         <outlet property="newCollectionButton" destination="upJ-1a-VMk" id="eDX-Ej-4xa"/>
                     </connections>

@@ -133,8 +133,8 @@ extension TravelLocationsViewController {
         let pin = Pin(context: dataController.viewContext)
         pin.latitude = coordinates.latitude
         pin.longitude = coordinates.longitude
-        //try? dataController.viewContext.save()
-        dataController.saveInMainContext()
+        try? dataController.viewContext.save()
+        //dataController.saveInMainContext()
     }
 }
 
