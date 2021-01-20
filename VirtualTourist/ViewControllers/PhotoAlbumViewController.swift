@@ -17,7 +17,9 @@ class PhotoAlbumViewController: UIViewController {
     
     var dataController: DataController!
     
-    var fetchedResultsController: NSFetchedResultsController<Photo>!
+    private var fetchedResultsController: NSFetchedResultsController<Photo>!
+    private var blockOperations: [BlockOperation] = []
+    
     
     let spacing: CGFloat = 8.0
     let itemsPerRow: Int = 3
@@ -36,7 +38,7 @@ class PhotoAlbumViewController: UIViewController {
         
         setUpFetchedResultsController()
         
-        setUpCollectionView()
+        setUpCollectionViewAndLayout()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -63,6 +65,7 @@ class PhotoAlbumViewController: UIViewController {
     
     @IBAction func newCollectionPressed(_ sender: Any) {
         deleteAllPhotos()
+        print("All photos deleted. Try to get new ones.")
         downloadPhotoUrls()
     }
     
@@ -95,6 +98,8 @@ class PhotoAlbumViewController: UIViewController {
             } else {
                 // TODO: Error handling
                 print("Didn't get a url list")
+                
+                // CASE: No images available.
             }
         }
     }
@@ -161,6 +166,7 @@ class PhotoAlbumViewController: UIViewController {
         fetchRequest.sortDescriptors = []
         
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: "\(pin.objectID)-photos")
+        fetchedResultsController.delegate = self
         do {
             try fetchedResultsController.performFetch()
         } catch {
@@ -168,7 +174,7 @@ class PhotoAlbumViewController: UIViewController {
         }
     }
     
-    private func setUpCollectionView() {
+    private func setUpCollectionViewAndLayout() {
         collectionView.delegate = self
         collectionView.dataSource = self
         
@@ -248,21 +254,41 @@ extension PhotoAlbumViewController: UICollectionViewDelegate, UICollectionViewDa
 // MARK: NSFetchedResultsControllerDelegate
 
 extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
+    /* Implementation inspired by this Swift 4 solution https://stackoverflow.com/a/34694755 */
+    
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        print("controllerWillChangeContent")
+        blockOperations.removeAll(keepingCapacity: false)
+    }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         print("FRC didChange anObject")
+        
+        let operation: BlockOperation
+        
         switch type {
         case .insert:
-            collectionView.insertItems(at: [newIndexPath!])
+            guard let newIndexPath = newIndexPath else { return }
+            operation = BlockOperation(block: {
+                self.collectionView.insertItems(at: [newIndexPath])
+            })
         case .delete:
-            collectionView.deleteItems(at: [indexPath!])
+            guard let indexPath = indexPath else { return }
+            operation = BlockOperation(block: {
+                self.collectionView.deleteItems(at: [indexPath])
+            })
         case .update:
-            collectionView.reloadItems(at: [indexPath!])
+            guard let indexPath = indexPath else { return }
+            operation = BlockOperation(block: {
+                self.collectionView.reloadItems(at: [indexPath])
+            })
         case .move:
-            collectionView.moveItem(at: indexPath!, to: newIndexPath!)
+            fatalError("Move operation not supported for collection view items")
         @unknown default:
             fatalError("Unknown type in changing an object from collection view")
         }
+        
+        blockOperations.append(operation)
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
@@ -278,11 +304,13 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
         }
     }
     
-    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("controllerWillChangeContent")
-    }
-    
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         print("controllerDidChangeContent")
+        
+        collectionView.performBatchUpdates {
+            self.blockOperations.forEach { $0.start() }
+        } completion: { (finished) in
+            self.blockOperations.removeAll(keepingCapacity: false)
+        }
     }
 }

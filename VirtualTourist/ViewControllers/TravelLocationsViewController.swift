@@ -121,6 +121,7 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
 }
 
 extension TravelLocationsViewController {
+    
     @objc private func recognizeTouchAndHoldGestureOnMap(_ sender: UILongPressGestureRecognizer) {
         guard sender.state == UIGestureRecognizer.State.ended else {
             return
