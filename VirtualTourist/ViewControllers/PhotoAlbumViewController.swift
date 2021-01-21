@@ -10,6 +10,8 @@ import MapKit
 import CoreData
 
 
+// MARK: PhotoAlbumViewController: UIViewController
+
 class PhotoAlbumViewController: UIViewController {
     
     // Associated pin for the photo album presented in this view controller
@@ -20,6 +22,7 @@ class PhotoAlbumViewController: UIViewController {
     private var fetchedResultsController: NSFetchedResultsController<Photo>!
     private var blockOperations: [BlockOperation] = []
     
+    private var userInteractionEnabled = false
     
     let spacing: CGFloat = 8.0
     let itemsPerRow: Int = 3
@@ -36,6 +39,8 @@ class PhotoAlbumViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        enableUserInteraction(false)
+        
         setUpFetchedResultsController()
         
         setUpCollectionViewAndLayout()
@@ -48,11 +53,11 @@ class PhotoAlbumViewController: UIViewController {
         
         presentPinOnMap()
         
-        print("Photos count is \(pin.photos?.count ?? -1)")
+        // Start donwloading new photos in case none have been stored from previous run
         if pin.photos?.count == 0 {
             downloadPhotoUrls()
         } else {
-            print("No further download necessary")
+            enableUserInteraction(true)
         }
     }
     
@@ -64,8 +69,11 @@ class PhotoAlbumViewController: UIViewController {
     
     
     @IBAction func newCollectionPressed(_ sender: Any) {
+        // Disallow user to make further interactions
+        enableUserInteraction(false)
+        
+        // Remove existing photos and download new ones
         deleteAllPhotos()
-        print("All photos deleted. Try to get new ones.")
         downloadPhotoUrls()
     }
     
@@ -77,7 +85,6 @@ class PhotoAlbumViewController: UIViewController {
         if let pin = pin {
             
             // Present pin on local map
-            localMap.view(for: pin)?.tintColor = MKPinAnnotationView.purplePinColor()
             localMap.showAnnotations([pin], animated: true)
         
         } else {
@@ -101,6 +108,9 @@ class PhotoAlbumViewController: UIViewController {
                 
                 // CASE: No images available.
             }
+            
+            // Reenable user interaction
+            self.enableUserInteraction(true)
         }
     }
     
@@ -157,6 +167,14 @@ class PhotoAlbumViewController: UIViewController {
     }
     
     
+    // MARK: User Interaction helper
+    
+    private func enableUserInteraction(_ state: Bool) {
+        newCollectionButton.isEnabled = state
+        userInteractionEnabled = state
+    }
+    
+    
     // MARK: Setup methods
     
     private func setUpFetchedResultsController() {
@@ -199,8 +217,16 @@ extension PhotoAlbumViewController: UICollectionViewDelegate, UICollectionViewDa
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        print("number of photos: \(pin.photos?.count ?? 0)")
-        return fetchedResultsController.sections?[section].numberOfObjects ?? 0
+        let photosCount = fetchedResultsController.sections?[section].numberOfObjects ?? 0
+        
+        if photosCount == 0 {
+            collectionView.setBackgroundMessage(message: "No images")
+        } else {
+            collectionView.removeBackgroundMessage()
+        }
+        
+        print("number of photos: \(photosCount)")
+        return photosCount
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -218,40 +244,39 @@ extension PhotoAlbumViewController: UICollectionViewDelegate, UICollectionViewDa
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let alertVC = UIAlertController(title: "Delete photo?", message: "The photo will be removed permanently from the app.", preferredStyle: .alert)
-        alertVC.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action) in
-            self.deletePhoto(indexPath: indexPath)
-        }))
-        alertVC.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-        
-        self.present(alertVC, animated: true, completion: nil)
+        if userInteractionEnabled {
+            let alertVC = UIAlertController(title: "Delete photo?", message: "The photo will be removed permanently from the app.", preferredStyle: .alert)
+            alertVC.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action) in
+                self.deletePhoto(indexPath: indexPath)
+            }))
+            alertVC.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+            
+            self.present(alertVC, animated: true, completion: nil)
+        }
     }
     
 }
 
 
-// MARK: UICollectionViewDelegateFlowLayout
+// MARK: UICollectionView Extension
 
-/*extension PhotoAlbumViewController: UICollectionViewDelegateFlowLayout {
-    // Setting the cell sizes properly
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        //print("collectionView.frame.width is \(collectionView.frame.width)")
+extension UICollectionView {
+    func setBackgroundMessage(message: String) {
+        let label = UILabel(frame: CGRect(x: 0, y: 0, width: frame.size.width, height: frame.size.height))
+        label.text = message
+        label.textAlignment = .center
+        label.textColor = .gray
         
-        let itemSize = (collectionView.frame.width - CGFloat(2 * cellsPerRow + 1) * cellInset) / CGFloat(cellsPerRow)
-        return CGSize(width: itemSize, height: itemSize)
+        backgroundView = label
     }
     
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
-        return UIEdgeInsets(top: cellInset, left: cellInset, bottom: cellInset, right: cellInset)
+    func removeBackgroundMessage() {
+        backgroundView = nil
     }
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return cellInset
-    }
-}*/
+}
 
 
-// MARK: NSFetchedResultsControllerDelegate
+// MARK: NSFetchedResultsController Delegate
 
 extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
     /* Implementation inspired by this Swift 4 solution https://stackoverflow.com/a/34694755 */

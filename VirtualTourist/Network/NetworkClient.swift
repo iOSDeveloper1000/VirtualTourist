@@ -15,15 +15,17 @@ class NetworkClient {
         static let staticPhotoUrl = "https://live.staticflickr.com"
         static let apiKey = ""
         static let apiMethod = "flickr.photos.search"
-        static let photosPerPage = 18
-        static let pageNumber = 3
-        static let searchRangeInKM = 7
+        static let photosPerPage = 12
+        static let pageNumberMax = 42
+        static let searchRangeInKM = 13
     }
     
     
     class func downloadListOfPhotoUrls(latitude: Double, longitude: Double, completion: @escaping ([String]?, HttpStatusResponse?, Error?) -> Void) -> URLSessionDataTask {
 
-        let flickrUrl = URL(string: "\(Constants.endpointSearch)?api_key=\(Constants.apiKey)&method=\(Constants.apiMethod)&format=json&per_page=\(Constants.photosPerPage)&page=\(Constants.pageNumber)&lat=\(latitude)&lon=\(longitude)&radius=\(Constants.searchRangeInKM)")
+        // Asserting kind of randomness for the received images
+        let pageNumber = Int.random(in: 1...Constants.pageNumberMax)
+        let flickrUrl = URL(string: "\(Constants.endpointSearch)?api_key=\(Constants.apiKey)&method=\(Constants.apiMethod)&format=json&per_page=\(Constants.photosPerPage)&page=\(pageNumber)&lat=\(latitude)&lon=\(longitude)&radius=\(Constants.searchRangeInKM)")
         
         let task = URLSession.shared.dataTask(with: flickrUrl!, completionHandler: { (data, response, error) in
             guard let data = data else {

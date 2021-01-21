@@ -10,24 +10,33 @@ import MapKit
 import CoreData
 
 
-class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
+class TravelLocationsViewController: UIViewController {
     
     var dataController: DataController!
     
     var fetchedResultsController: NSFetchedResultsController<Pin>!
     
     var longPressRecognizer: UILongPressGestureRecognizer!
- 
+    
+    struct UserDefaultKey {
+        static let mapHasLaunchedKey = "KeyForMapHasLaunchedBefore"
+        
+        static let mapCenterLatKey = "KeyForMapCenterLatitude"
+        static let mapCenterLonKey = "KeyForMapCenterLongitude"
+        static let mapSpanLatDeltaKey = "KeyForMapLatitudinalDelta"
+        static let mapSpanLonDeltaKey = "KeyForMapLongitudinalDelta"
+    }
+    
     
     @IBOutlet weak var mapView: MKMapView!
     
     
     // MARK: Life cycle
     
-    fileprivate func setupFetchedResultsController() {
+    fileprivate func setUpFetchedResultsController() {
         // Set up the current map excerpt with pins from persistence
         let fetchRequest: NSFetchRequest<Pin> = Pin.fetchRequest()
-        let predicate = NSPredicate(value: true) // TODO: set to map excerpt ?
+        //let predicate = NSPredicate(value: true) // TODO: set to map excerpt ?
         fetchRequest.sortDescriptors = []
         
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: "pins")
@@ -49,13 +58,15 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
         mapView.delegate = self
         mapView.gestureRecognizers = [longPressRecognizer]
         
-        setupFetchedResultsController()
+        setUpFetchedResultsController()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        setupFetchedResultsController()
+        setUpFetchedResultsController()
+        
+        setUpMap()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -64,7 +75,63 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
         fetchedResultsController = nil
     }
     
-    // MARK: MapView Delegate
+    
+    // MARK: Map view helpers
+    
+    private func setUpMap() {
+        if UserDefaults.standard.bool(forKey: UserDefaultKey.mapHasLaunchedKey) {
+            print("Map has launched before")
+            
+            fetchMapSettings()
+            
+        } else {
+            print("This is map's first launch ever!")
+            
+            UserDefaults.standard.set(true, forKey: UserDefaultKey.mapHasLaunchedKey)
+            UserDefaults.standard.synchronize()
+        }
+    }
+    
+    private func fetchMapSettings() {
+        let mapCenterLatitude = UserDefaults.standard.double(forKey: UserDefaultKey.mapCenterLatKey)
+        let mapCenterLongitude = UserDefaults.standard.double(forKey: UserDefaultKey.mapCenterLonKey)
+        let mapSpanLatDelta = UserDefaults.standard.double(forKey: UserDefaultKey.mapSpanLatDeltaKey)
+        let mapSpanLonDelta = UserDefaults.standard.double(forKey: UserDefaultKey.mapSpanLonDeltaKey)
+        
+        let mapCenter = CLLocationCoordinate2D(latitude: mapCenterLatitude, longitude: mapCenterLongitude)
+        let mapSpan = MKCoordinateSpan(latitudeDelta: mapSpanLatDelta, longitudeDelta: mapSpanLonDelta)
+        let mapRegion = MKCoordinateRegion(center: mapCenter, span: mapSpan)
+        
+        mapView.setRegion(mapRegion, animated: false)
+    }
+    
+    private func saveMapSettings() {
+        print("Store map settings in user defaults")
+        
+        let mapCenter = mapView.centerCoordinate
+        let mapSpan = mapView.region.span
+        
+        UserDefaults.standard.set(mapCenter.latitude, forKey: UserDefaultKey.mapCenterLatKey)
+        UserDefaults.standard.set(mapCenter.longitude, forKey: UserDefaultKey.mapCenterLonKey)
+        UserDefaults.standard.set(mapSpan.latitudeDelta, forKey: UserDefaultKey.mapSpanLatDeltaKey)
+        UserDefaults.standard.set(mapSpan.longitudeDelta, forKey: UserDefaultKey.mapSpanLonDeltaKey)
+    }
+    
+    private func updatePins() {
+        if let pins = fetchedResultsController.fetchedObjects {
+            mapView.removeAnnotations(mapView.annotations)
+            mapView.addAnnotations(pins)
+        } else {
+            print("updatePins() else path")
+            // TODO: Error handling
+        }
+    }
+}
+
+
+// MARK: MKMapView Delegate
+ 
+extension TravelLocationsViewController: MKMapViewDelegate {
     
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         
@@ -79,7 +146,6 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
             pinView?.animatesDrop = true
             pinView?.canShowCallout = false
             pinView?.pinTintColor = MKPinAnnotationView.purplePinColor()
-            //pinView?.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
         
         } else {
             
@@ -107,18 +173,14 @@ class TravelLocationsViewController: UIViewController, MKMapViewDelegate {
         }
     }
     
-    // MARK: Helper
-    
-    func updatePins() {
-        if let pins = fetchedResultsController.fetchedObjects {
-            mapView.removeAnnotations(mapView.annotations)
-            mapView.addAnnotations(pins)
-        } else {
-            print("updatePins() else path")
-            // TODO: Error handling
-        }
+    func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        print("Region did change animated")
+        saveMapSettings()
     }
 }
+
+
+// MARK: Extension for Gesture Recognition
 
 extension TravelLocationsViewController {
     
@@ -138,6 +200,9 @@ extension TravelLocationsViewController {
         //dataController.saveInMainContext()
     }
 }
+
+
+// MARK: NSFetchedResultsController Delegate
 
 extension TravelLocationsViewController: NSFetchedResultsControllerDelegate {
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
