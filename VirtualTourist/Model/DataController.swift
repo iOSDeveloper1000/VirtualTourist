@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 import CoreData
 
 
@@ -27,19 +28,37 @@ class DataController {
                 fatalError(error!.localizedDescription)
             }
             
+            self.autoSaveViewContext()
             completion?()
         }
     }
     
-    func saveInMainContext() {
+    func saveViewContext(viewController: UIViewController? = nil) {
         if viewContext.hasChanges {
             do {
                 try viewContext.save()
             } catch {
-                print("Error while saving")
-                print(error.localizedDescription)
+                if let viewController = viewController {
+                    ErrorHandling.notifyUser(onVC: viewController, case: .couldNotSave, detailedDescription: "Internal error: \(error.localizedDescription)")
+                } else {
+                    print("Could not save automatically: \(error.localizedDescription)")
+                }
+                
             }
         }
     }
     
+    func autoSaveViewContext(interval: TimeInterval = 50) {
+        
+        guard interval > 0 else {
+            print("Cannot set negative autosave interval")
+            return
+        }
+        
+        saveViewContext()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + interval) {
+            self.autoSaveViewContext(interval: interval)
+        }
+    }
 }

@@ -15,13 +15,13 @@ class NetworkClient {
         static let staticPhotoUrl = "https://live.staticflickr.com"
         static let apiKey = ""
         static let apiMethod = "flickr.photos.search"
-        static let photosPerPage = 12
-        static let pageNumberMax = 42
-        static let searchRangeInKM = 13
+        static let photosPerPage = 18
+        static let pageNumberMax = 13
+        static let searchRangeInKM = 7
     }
     
     
-    class func downloadListOfPhotoUrls(latitude: Double, longitude: Double, completion: @escaping ([String]?, HttpStatusResponse?, Error?) -> Void) -> URLSessionDataTask {
+    class func downloadListOfPhotoUrls(latitude: Double, longitude: Double, completion: @escaping ([String]?, HttpStatusResponse?, Error?) -> Void) {
 
         // Asserting kind of randomness for the received images
         let pageNumber = Int.random(in: 1...Constants.pageNumberMax)
@@ -66,12 +66,22 @@ class NetworkClient {
             }
         })
         task.resume()
-        
-        return task
     }
     
-    /*class func downloadImageData(url: URL, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {
-        URLSession.shared.dataTask(with: url, completionHandler: completion).resume()
-    }*/
+    class func downloadPhotoData(url: URL, completion: @escaping (Data?) -> Void) {
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let data = try? Data(contentsOf: url) {
+                
+                DispatchQueue.main.async {
+                    completion(data)
+                }
+            } else {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+            }
+        }
+    }
     
 }

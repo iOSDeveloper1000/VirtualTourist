@@ -27,27 +27,13 @@ class TravelLocationsViewController: UIViewController {
         static let mapSpanLonDeltaKey = "KeyForMapLongitudinalDelta"
     }
     
+    let reusePinIdentifier = "PinIdentifier"
+    
     
     @IBOutlet weak var mapView: MKMapView!
     
     
     // MARK: Life cycle
-    
-    fileprivate func setUpFetchedResultsController() {
-        // Set up the current map excerpt with pins from persistence
-        let fetchRequest: NSFetchRequest<Pin> = Pin.fetchRequest()
-        //let predicate = NSPredicate(value: true) // TODO: set to map excerpt ?
-        fetchRequest.sortDescriptors = []
-        
-        fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: "pins")
-        fetchedResultsController.delegate = self
-        do {
-            try fetchedResultsController.performFetch()
-            updatePins()
-        } catch {
-            fatalError(error.localizedDescription) // TODO: Error handling
-        }
-    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -78,20 +64,6 @@ class TravelLocationsViewController: UIViewController {
     
     // MARK: Map view helpers
     
-    private func setUpMap() {
-        if UserDefaults.standard.bool(forKey: UserDefaultKey.mapHasLaunchedKey) {
-            print("Map has launched before")
-            
-            fetchMapSettings()
-            
-        } else {
-            print("This is map's first launch ever!")
-            
-            UserDefaults.standard.set(true, forKey: UserDefaultKey.mapHasLaunchedKey)
-            UserDefaults.standard.synchronize()
-        }
-    }
-    
     private func fetchMapSettings() {
         let mapCenterLatitude = UserDefaults.standard.double(forKey: UserDefaultKey.mapCenterLatKey)
         let mapCenterLongitude = UserDefaults.standard.double(forKey: UserDefaultKey.mapCenterLonKey)
@@ -106,8 +78,6 @@ class TravelLocationsViewController: UIViewController {
     }
     
     private func saveMapSettings() {
-        print("Store map settings in user defaults")
-        
         let mapCenter = mapView.centerCoordinate
         let mapSpan = mapView.region.span
         
@@ -122,8 +92,40 @@ class TravelLocationsViewController: UIViewController {
             mapView.removeAnnotations(mapView.annotations)
             mapView.addAnnotations(pins)
         } else {
-            print("updatePins() else path")
-            // TODO: Error handling
+            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: "Internal error: The persisted pins could not be retrieved.")
+        }
+    }
+    
+    
+    // MARK: Setup methods
+    
+    private func setUpFetchedResultsController() {
+        // Set up the current map excerpt with pins from persistence
+        let fetchRequest: NSFetchRequest<Pin> = Pin.fetchRequest()
+        //let predicate = NSPredicate(value: true) // TODO: set to map excerpt ?
+        fetchRequest.sortDescriptors = []
+        
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: "pins")
+        fetchedResultsController.delegate = self
+        do {
+            try fetchedResultsController.performFetch()
+            updatePins()
+        } catch {
+            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: error.localizedDescription)
+        }
+    }
+    
+    private func setUpMap() {
+        if UserDefaults.standard.bool(forKey: UserDefaultKey.mapHasLaunchedKey) {
+            
+            // Retrieve persisted map settings
+            fetchMapSettings()
+            
+        } else {
+            
+            // This is the first launch ever. Map settings will be persisted with the initial map launch at once in method mapView(_:regionDidChangeAnimated:).
+            UserDefaults.standard.set(true, forKey: UserDefaultKey.mapHasLaunchedKey)
+            UserDefaults.standard.synchronize()
         }
     }
 }
@@ -135,13 +137,11 @@ extension TravelLocationsViewController: MKMapViewDelegate {
     
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         
-        let reusePinId = "PinIdentifier"
-        
-        var pinView = mapView.dequeueReusableAnnotationView(withIdentifier: reusePinId) as? MKPinAnnotationView
+        var pinView = mapView.dequeueReusableAnnotationView(withIdentifier: reusePinIdentifier) as? MKPinAnnotationView
         
         if pinView == nil {
             
-            pinView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reusePinId)
+            pinView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reusePinIdentifier)
             
             pinView?.animatesDrop = true
             pinView?.canShowCallout = false
@@ -153,12 +153,11 @@ extension TravelLocationsViewController: MKMapViewDelegate {
         
         }
         
-        print("Pin - Latitude: \(annotation.coordinate.latitude) - Longitude: \(annotation.coordinate.longitude)")
-        
         return pinView
     }
     
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+        
         if let pin = view.annotation as? Pin {
             
             let photoAlbumVC = storyboard?.instantiateViewController(identifier: "PhotoAlbumViewController") as! PhotoAlbumViewController
@@ -168,14 +167,15 @@ extension TravelLocationsViewController: MKMapViewDelegate {
             navigationController?.pushViewController(photoAlbumVC, animated: true)
             
         } else {
-            print("!!! Annotation is no Pin !!!")
-            // TODO: Error handling
+            ErrorHandling.notifyUser(onVC: self, case: .unknownMapAnnotation, detailedDescription: "Internal error: The given map annotation could not be recognized.")
         }
     }
     
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-        print("Region did change animated")
+        
+        // Persist map view with each change
         saveMapSettings()
+        
     }
 }
 
@@ -196,8 +196,8 @@ extension TravelLocationsViewController {
         let pin = Pin(context: dataController.viewContext)
         pin.latitude = coordinates.latitude
         pin.longitude = coordinates.longitude
-        try? dataController.viewContext.save()
-        //dataController.saveInMainContext()
+        
+        dataController.saveViewContext(viewController: self)
     }
 }
 
@@ -205,12 +205,12 @@ extension TravelLocationsViewController {
 // MARK: NSFetchedResultsController Delegate
 
 extension TravelLocationsViewController: NSFetchedResultsControllerDelegate {
+    
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         guard let pin = anObject as? Pin else {
-            fatalError("Object cannot be converted to Pin") // TODO
+            ErrorHandling.notifyUser(onVC: self, case: .unknownMapAnnotation, detailedDescription: "Internal error: Could not recognize the given map object as a pin.")
+            return
         }
-        
-        print("controller(_:didChange:at:for:newIndexPath:)")
         
         switch type {
         case .insert:
@@ -221,7 +221,7 @@ extension TravelLocationsViewController: NSFetchedResultsControllerDelegate {
             mapView.removeAnnotation(pin)
             mapView.addAnnotation(pin)
         default:
-            fatalError("Cases other than .insert and .delete are not supported for pins.")
+            ErrorHandling.notifyUser(onVC: self, case: .unsupportedOperation, detailedDescription: "Internal error: Cases other than .insert, .delete and .update are not supported for pins.")
         }
     }
 }

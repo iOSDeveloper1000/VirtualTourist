@@ -24,8 +24,15 @@ class PhotoAlbumViewController: UIViewController {
     
     private var userInteractionEnabled = false
     
-    let spacing: CGFloat = 8.0
-    let itemsPerRow: Int = 3
+    private struct LayoutConst {
+        
+        static let spacing: CGFloat = 5.0
+        static let itemsPerRow: CGFloat = 3
+        
+        static var padding: CGFloat {
+            return (itemsPerRow + 1) * spacing
+        }
+    }
     
     
     @IBOutlet weak var localMap: MKMapView!
@@ -88,25 +95,23 @@ class PhotoAlbumViewController: UIViewController {
             localMap.showAnnotations([pin], animated: true)
         
         } else {
-            // TODO: Error handling
-            print("Pin is nil.")
+            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: "Internal error: The searched pin is not available.")
         }
     }
     
     
-    // MARK: Collection View helper
+    // MARK: Collection View helpers
     
     private func downloadPhotoUrls() {
-        _ = NetworkClient.downloadListOfPhotoUrls(latitude: pin.latitude, longitude: pin.longitude) { (urlList, statusResponse, error) in
-            if let urlList = urlList {
+        
+        NetworkClient.downloadListOfPhotoUrls(latitude: pin.latitude, longitude: pin.longitude) { (urlList, statusResponse, error) in
+            
+            if let urlList = urlList, !urlList.isEmpty {
                 for url in urlList {
                     self.addPhoto(urlString: url)
                 }
             } else {
-                // TODO: Error handling
-                print("Didn't get a url list")
-                
-                // CASE: No images available.
+                ErrorHandling.notifyUser(onVC: self, case: .noImagesAvailable, detailedDescription: error?.localizedDescription ?? "For the specified region no images could be found.")
             }
             
             // Reenable user interaction
@@ -119,50 +124,48 @@ class PhotoAlbumViewController: UIViewController {
         let photo = Photo(context: dataController.viewContext)
         photo.url = urlString
         photo.pin = pin
-        try? dataController.viewContext.save()
+        
+        dataController.saveViewContext(viewController: self)
     
         // Start downloading photo
         if let url = URL(string: urlString) {
-            downloadPhotoData(url: url) { (imgData) in
-                photo.image = imgData
-                try? self.dataController.viewContext.save()
+            NetworkClient.downloadPhotoData(url: url) { (imgData) in
+                
+                if let imgData = imgData {
+                    
+                    photo.image = imgData
+                    
+                    self.dataController.saveViewContext(viewController: self)
+                
+                } else {
+                    ErrorHandling.notifyUser(onVC: self, case: .networkOffline, detailedDescription: "Could not download image data.")
+                }
             }
         } else {
-            print("URL Could not be retrieved")
+            ErrorHandling.notifyUser(onVC: self, case: .urlInvalid, detailedDescription: "The given url string could not be converted to a valid URL.")
         }
-    }
-    
-    private func downloadPhotoData(url: URL, completion: @escaping (Data?) -> Void) {
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            if let data = try? Data(contentsOf: url) {
-                
-                DispatchQueue.main.async {
-                    completion(data)
-                }
-            } else {
-                print("Data could not be downloaded")
-            }
-        }
-        
-        // TODO: Error handling & saving of image data to Photo object
     }
     
     private func deletePhoto(indexPath: IndexPath) {
+        
         let photoToDelete = fetchedResultsController.object(at: indexPath)
         dataController.viewContext.delete(photoToDelete)
-        try? dataController.viewContext.save()
+        
+        dataController.saveViewContext(viewController: self)
+        
     }
     
     private func deleteAllPhotos() {
+        
         if let photos = pin.photos {
             for photo in photos {
                 dataController.viewContext.delete(photo as! NSManagedObject)
             }
-            try? dataController.viewContext.save()
+            
+            dataController.saveViewContext(viewController: self)
+            
         } else {
-            print("Photos array is nil")
-            // TODO: Error handling
+            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: "Internal error: Trying to delete non existing photos list.")
         }
     }
     
@@ -178,6 +181,7 @@ class PhotoAlbumViewController: UIViewController {
     // MARK: Setup methods
     
     private func setUpFetchedResultsController() {
+        
         // Set up the current map excerpt with pins from persistence
         let fetchRequest: NSFetchRequest<Photo> = Photo.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "pin == %@", pin)
@@ -188,7 +192,7 @@ class PhotoAlbumViewController: UIViewController {
         do {
             try fetchedResultsController.performFetch()
         } catch {
-            fatalError(error.localizedDescription) // TODO: Error handling
+            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: error.localizedDescription)
         }
     }
     
@@ -197,13 +201,13 @@ class PhotoAlbumViewController: UIViewController {
         collectionView.dataSource = self
         
         // Set up flow layout
-        let shortEdge = min(collectionView.frame.size.width, collectionView.frame.size.height) // short edge of display (depending on orientation)
-        let padding = (CGFloat(itemsPerRow) - 1) * spacing
-        let itemSize = (shortEdge - padding) / CGFloat(itemsPerRow)
+        let shortEdge = min(view.frame.size.width, view.frame.size.height) // short edge of display (depending on orientation)
+        let itemSize = (shortEdge - LayoutConst.padding) / LayoutConst.itemsPerRow
 
-        flowLayout.minimumInteritemSpacing = spacing
-        flowLayout.minimumLineSpacing = spacing
+        flowLayout.minimumInteritemSpacing = LayoutConst.spacing
+        flowLayout.minimumLineSpacing = LayoutConst.spacing
         flowLayout.itemSize = CGSize(width: itemSize, height: itemSize)
+        flowLayout.sectionInset = UIEdgeInsets(top: LayoutConst.spacing, left: LayoutConst.spacing, bottom: LayoutConst.spacing, right: LayoutConst.spacing)
     }
 }
 
@@ -225,7 +229,6 @@ extension PhotoAlbumViewController: UICollectionViewDelegate, UICollectionViewDa
             collectionView.removeBackgroundMessage()
         }
         
-        print("number of photos: \(photosCount)")
         return photosCount
     }
     
@@ -236,7 +239,6 @@ extension PhotoAlbumViewController: UICollectionViewDelegate, UICollectionViewDa
         if let img = photo.image {
             cell.imageView.image = UIImage(data: img)
         } else {
-            print("Photo not yet downloaded")
             cell.imageView.image = UIImage(named: "VirtualTourist_placeholder")
         }
         
@@ -244,7 +246,9 @@ extension PhotoAlbumViewController: UICollectionViewDelegate, UICollectionViewDa
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        
         if userInteractionEnabled {
+            
             let alertVC = UIAlertController(title: "Delete photo?", message: "The photo will be removed permanently from the app.", preferredStyle: .alert)
             alertVC.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action) in
                 self.deletePhoto(indexPath: indexPath)
@@ -252,6 +256,7 @@ extension PhotoAlbumViewController: UICollectionViewDelegate, UICollectionViewDa
             alertVC.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
             
             self.present(alertVC, animated: true, completion: nil)
+            
         }
     }
     
@@ -282,12 +287,10 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
     /* Implementation inspired by this Swift 4 solution https://stackoverflow.com/a/34694755 */
     
     func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("controllerWillChangeContent")
         blockOperations.removeAll(keepingCapacity: false)
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
-        print("FRC didChange anObject")
         
         let operation: BlockOperation
         
@@ -307,17 +310,16 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
             operation = BlockOperation(block: {
                 self.collectionView.reloadItems(at: [indexPath])
             })
-        case .move:
-            fatalError("Move operation not supported for collection view items")
-        @unknown default:
-            fatalError("Unknown type in changing an object from collection view")
+        default:
+            ErrorHandling.notifyUser(onVC: self, case: .unsupportedOperation, detailedDescription: "Internal error: Cases other than .insert, .delete and .update are not supported for photos.")
+            return
         }
         
         blockOperations.append(operation)
     }
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
-        print("FRC didChange sectionInfo")
+        
         let indexSet = IndexSet(integer: sectionIndex)
         switch type {
         case .insert:
@@ -325,12 +327,12 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
         case .delete:
             collectionView.deleteSections(indexSet)
         default:
-            fatalError("Invalid change type in collection view controller for section index \(sectionIndex)")
+            ErrorHandling.notifyUser(onVC: self, case: .unsupportedOperation, detailedDescription: "Internal error: Cases other than .insert and .delete are not supported for photo sections.")
+            break
         }
     }
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("controllerDidChangeContent")
         
         collectionView.performBatchUpdates {
             self.blockOperations.forEach { $0.start() }
