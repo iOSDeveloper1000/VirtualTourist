@@ -1,14 +1,17 @@
 //
-//  ErrorHandling.swift
+//  ViewController+Extension.swift
 //  VirtualTourist
 //
-//  Created by Arno Seidel on 22.01.21.
+//  Created by Arno Seidel on 25.01.21.
 //
 
 import UIKit
 
 
-class ErrorHandling {
+// Handling Errors
+// Inspired by https://stackoverflow.com/a/60414319
+
+extension UIViewController {
     
     enum Case {
         case networkOffline
@@ -39,12 +42,15 @@ class ErrorHandling {
         }
     }
     
-    class func notifyUser(onVC controller: UIViewController, case error: Case, detailedDescription: String = "Unknown error") {
-        let alertVC = UIAlertController(title: error.title, message: detailedDescription, preferredStyle: .alert)
+    
+    func notifyWithAlert(errorCase: Case, message: String){
 
-        alertVC.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-
-        controller.present(alertVC, animated: true, completion: nil)
+        let alertController = UIAlertController(title: errorCase.title, message: message, preferredStyle: .alert)
+        
+        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        
+        self.present(alertController, animated: true)
     }
     
 }
+

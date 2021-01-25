@@ -74,15 +74,21 @@
                                                 <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="rXb-W2-iQj">
                                                     <rect key="frame" x="0.0" y="0.0" width="100" height="100"/>
                                                 </imageView>
+                                                <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" style="medium" translatesAutoresizingMaskIntoConstraints="NO" id="Ser-m8-CIA">
+                                                    <rect key="frame" x="40" y="40" width="20" height="20"/>
+                                                </activityIndicatorView>
                                             </subviews>
                                             <constraints>
                                                 <constraint firstItem="rXb-W2-iQj" firstAttribute="top" secondItem="ExR-eF-Jpk" secondAttribute="top" id="7z8-oL-y63"/>
+                                                <constraint firstItem="Ser-m8-CIA" firstAttribute="centerY" secondItem="ExR-eF-Jpk" secondAttribute="centerY" id="ILV-A3-kDU"/>
                                                 <constraint firstAttribute="trailing" secondItem="rXb-W2-iQj" secondAttribute="trailing" id="PN4-kS-Vri"/>
                                                 <constraint firstAttribute="bottom" secondItem="rXb-W2-iQj" secondAttribute="bottom" id="Pec-V7-0qn"/>
+                                                <constraint firstItem="Ser-m8-CIA" firstAttribute="centerX" secondItem="ExR-eF-Jpk" secondAttribute="centerX" id="vWy-r4-bP6"/>
                                                 <constraint firstItem="rXb-W2-iQj" firstAttribute="leading" secondItem="ExR-eF-Jpk" secondAttribute="leading" id="wpx-Ro-ExH"/>
                                             </constraints>
                                         </collectionViewCellContentView>
                                         <connections>
+                                            <outlet property="activityIndicator" destination="Ser-m8-CIA" id="kKH-vl-3S2"/>
                                             <outlet property="imageView" destination="rXb-W2-iQj" id="e6l-k3-fI6"/>
                                         </connections>
                                     </collectionViewCell>

@@ -95,7 +95,7 @@ class PhotoAlbumViewController: UIViewController {
             localMap.showAnnotations([pin], animated: true)
         
         } else {
-            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: "Internal error: The searched pin is not available.")
+            notifyWithAlert(errorCase: .dataFetchFailed, message: "Internal error: The searched pin is not available.")
         }
     }
     
@@ -111,7 +111,7 @@ class PhotoAlbumViewController: UIViewController {
                     self.addPhoto(urlString: url)
                 }
             } else {
-                ErrorHandling.notifyUser(onVC: self, case: .noImagesAvailable, detailedDescription: error?.localizedDescription ?? "For the specified region no images could be found.")
+                self.notifyWithAlert(errorCase: .noImagesAvailable, message: error?.localizedDescription ?? "No images found for this region")
             }
             
             // Reenable user interaction
@@ -138,11 +138,11 @@ class PhotoAlbumViewController: UIViewController {
                     self.dataController.saveViewContext(viewController: self)
                 
                 } else {
-                    ErrorHandling.notifyUser(onVC: self, case: .networkOffline, detailedDescription: "Could not download image data.")
+                    self.notifyWithAlert(errorCase: .networkOffline, message: "Could not download image data.")
                 }
             }
         } else {
-            ErrorHandling.notifyUser(onVC: self, case: .urlInvalid, detailedDescription: "The given url string could not be converted to a valid URL.")
+            notifyWithAlert(errorCase: .urlInvalid, message: "The given url string could not be converted to a valid URL.")
         }
     }
     
@@ -165,7 +165,7 @@ class PhotoAlbumViewController: UIViewController {
             dataController.saveViewContext(viewController: self)
             
         } else {
-            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: "Internal error: Trying to delete non existing photos list.")
+            notifyWithAlert(errorCase: .dataFetchFailed, message: "Internal error: Trying to delete non-existing photo album.")
         }
     }
     
@@ -192,7 +192,7 @@ class PhotoAlbumViewController: UIViewController {
         do {
             try fetchedResultsController.performFetch()
         } catch {
-            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: error.localizedDescription)
+            notifyWithAlert(errorCase: .dataFetchFailed, message: error.localizedDescription)
         }
     }
     
@@ -237,9 +237,9 @@ extension PhotoAlbumViewController: UICollectionViewDelegate, UICollectionViewDa
         
         let photo = fetchedResultsController.object(at: indexPath)
         if let img = photo.image {
-            cell.imageView.image = UIImage(data: img)
+            cell.presentImage(image: UIImage(data: img))
         } else {
-            cell.imageView.image = UIImage(named: "VirtualTourist_placeholder")
+            cell.showPlaceholder()
         }
         
         return cell
@@ -311,7 +311,7 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
                 self.collectionView.reloadItems(at: [indexPath])
             })
         default:
-            ErrorHandling.notifyUser(onVC: self, case: .unsupportedOperation, detailedDescription: "Internal error: Cases other than .insert, .delete and .update are not supported for photos.")
+            notifyWithAlert(errorCase: .unsupportedOperation, message: "Internal error: Cases other than .insert, .delete and .update are not supported for photos.")
             return
         }
         
@@ -327,7 +327,7 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
         case .delete:
             collectionView.deleteSections(indexSet)
         default:
-            ErrorHandling.notifyUser(onVC: self, case: .unsupportedOperation, detailedDescription: "Internal error: Cases other than .insert and .delete are not supported for photo sections.")
+            notifyWithAlert(errorCase: .unsupportedOperation, message: "Internal error: Cases other than .insert and .delete are not supported for photo sections.")
             break
         }
     }

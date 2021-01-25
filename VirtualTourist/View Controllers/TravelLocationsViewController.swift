@@ -92,7 +92,7 @@ class TravelLocationsViewController: UIViewController {
             mapView.removeAnnotations(mapView.annotations)
             mapView.addAnnotations(pins)
         } else {
-            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: "Internal error: The persisted pins could not be retrieved.")
+            notifyWithAlert(errorCase: .dataFetchFailed, message: "Internal error: The persisted pins could not be retrieved.")
         }
     }
     
@@ -102,7 +102,6 @@ class TravelLocationsViewController: UIViewController {
     private func setUpFetchedResultsController() {
         // Set up the current map excerpt with pins from persistence
         let fetchRequest: NSFetchRequest<Pin> = Pin.fetchRequest()
-        //let predicate = NSPredicate(value: true) // TODO: set to map excerpt ?
         fetchRequest.sortDescriptors = []
         
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: "pins")
@@ -111,7 +110,7 @@ class TravelLocationsViewController: UIViewController {
             try fetchedResultsController.performFetch()
             updatePins()
         } catch {
-            ErrorHandling.notifyUser(onVC: self, case: .dataFetchFailed, detailedDescription: error.localizedDescription)
+            notifyWithAlert(errorCase: .dataFetchFailed, message: error.localizedDescription)
         }
     }
     
@@ -145,7 +144,7 @@ extension TravelLocationsViewController: MKMapViewDelegate {
             
             pinView?.animatesDrop = true
             pinView?.canShowCallout = false
-            pinView?.pinTintColor = MKPinAnnotationView.purplePinColor()
+            pinView?.pinTintColor = .red
         
         } else {
             
@@ -167,7 +166,7 @@ extension TravelLocationsViewController: MKMapViewDelegate {
             navigationController?.pushViewController(photoAlbumVC, animated: true)
             
         } else {
-            ErrorHandling.notifyUser(onVC: self, case: .unknownMapAnnotation, detailedDescription: "Internal error: The given map annotation could not be recognized.")
+            notifyWithAlert(errorCase: .unknownMapAnnotation, message: "Internal error: The given map annotation could not be recognized.")
         }
     }
     
@@ -176,6 +175,10 @@ extension TravelLocationsViewController: MKMapViewDelegate {
         // Persist map view with each change
         saveMapSettings()
         
+    }
+    
+    func mapViewDidFailLoadingMap(_ mapView: MKMapView, withError error: Error) {
+        notifyWithAlert(errorCase: .networkOffline, message: error.localizedDescription)
     }
 }
 
@@ -208,7 +211,7 @@ extension TravelLocationsViewController: NSFetchedResultsControllerDelegate {
     
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         guard let pin = anObject as? Pin else {
-            ErrorHandling.notifyUser(onVC: self, case: .unknownMapAnnotation, detailedDescription: "Internal error: Could not recognize the given map object as a pin.")
+            notifyWithAlert(errorCase: .unknownMapAnnotation, message: "Internal error: Could not recognize the given map object as a pin.")
             return
         }
         
@@ -221,7 +224,7 @@ extension TravelLocationsViewController: NSFetchedResultsControllerDelegate {
             mapView.removeAnnotation(pin)
             mapView.addAnnotation(pin)
         default:
-            ErrorHandling.notifyUser(onVC: self, case: .unsupportedOperation, detailedDescription: "Internal error: Cases other than .insert, .delete and .update are not supported for pins.")
+            notifyWithAlert(errorCase: .unsupportedOperation, message: "Internal error: Cases other than .insert, .delete and .update are not supported for pins.")
         }
     }
 }

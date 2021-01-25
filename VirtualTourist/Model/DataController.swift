@@ -34,16 +34,14 @@ class DataController {
     }
     
     func saveViewContext(viewController: UIViewController? = nil) {
+        
         if viewContext.hasChanges {
+            
             do {
                 try viewContext.save()
+            
             } catch {
-                if let viewController = viewController {
-                    ErrorHandling.notifyUser(onVC: viewController, case: .couldNotSave, detailedDescription: "Internal error: \(error.localizedDescription)")
-                } else {
-                    print("Could not save automatically: \(error.localizedDescription)")
-                }
-                
+                viewController?.notifyWithAlert(errorCase: .couldNotSave, message: "Internal error: \(error.localizedDescription)")
             }
         }
     }
