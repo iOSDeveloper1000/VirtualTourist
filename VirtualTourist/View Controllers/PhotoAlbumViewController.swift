@@ -237,9 +237,9 @@ extension PhotoAlbumViewController: UICollectionViewDelegate, UICollectionViewDa
         
         let photo = fetchedResultsController.object(at: indexPath)
         if let img = photo.image {
-            cell.presentImage(image: UIImage(data: img))
+            cell.showPlaceholder(show: false, image: UIImage(data: img))
         } else {
-            cell.showPlaceholder()
+            cell.showPlaceholder(show: true, image: nil)
         }
         
         return cell

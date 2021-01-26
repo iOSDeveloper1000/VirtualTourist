@@ -14,17 +14,12 @@ class PhotoCell: UICollectionViewCell {
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
  
     
-    func showPlaceholder() {
-        imageView.image = UIImage(named: "VirtualTourist_placeholder")
-        imageView.alpha = 0.3
+    func showPlaceholder(show: Bool, image: UIImage?) {
         
-        activityIndicator.startAnimating()
+        imageView.image = show ? UIImage(named: "VirtualTourist_placeholder") : image
+        imageView.alpha = show ? 0.3 : 1.0
+        
+        show ? activityIndicator.startAnimating() : activityIndicator.stopAnimating()
     }
     
-    func presentImage(image: UIImage?) {
-        imageView.image = image
-        imageView.alpha = 1.0  // Reset alpha value back to normal
-        
-        activityIndicator.stopAnimating()
-    }
 }

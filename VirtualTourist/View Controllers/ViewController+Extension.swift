@@ -49,7 +49,7 @@ extension UIViewController {
         
         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         
-        self.present(alertController, animated: true)
+        present(alertController, animated: true)
     }
     
 }
